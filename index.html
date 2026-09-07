@@ -160,6 +160,61 @@
     max-width:52ch;
   }
 
+  .quiz-options{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:18px;
+    max-width:52ch;
+  }
+  .quiz-option{
+    all:unset;
+    box-sizing:border-box;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 14px;
+    border:1px solid var(--card-edge);
+    border-radius:10px;
+    font-size:14.5px;
+    color:var(--text-1);
+    cursor:pointer;
+    transition: border-color .15s ease, background .15s ease, color .15s ease;
+  }
+  .quiz-option:hover{
+    border-color:var(--amber-dim);
+    color:var(--text-0);
+  }
+  .quiz-option .letter{
+    font-weight:700;
+    color:var(--text-2);
+    font-size:12px;
+    width:16px;
+  }
+  .quiz-option.correct{
+    border-color:#5fae6b;
+    background:rgba(95,174,107,.12);
+    color:var(--text-0);
+  }
+  .quiz-option.correct .letter{ color:#5fae6b; }
+  .quiz-option.incorrect{
+    border-color:#c1554a;
+    background:rgba(193,85,74,.12);
+    color:var(--text-0);
+  }
+  .quiz-option.incorrect .letter{ color:#c1554a; }
+  .quiz-option.disabled{
+    cursor:default;
+  }
+  .quiz-result{
+    margin-top:14px;
+    font-size:13.5px;
+    color:var(--text-2);
+  }
+  .quiz-result b{
+    color:var(--text-0);
+  }
+
   .photo-wrap{
     margin-top:18px;
   }
@@ -251,7 +306,7 @@
 
 <script>
 const QUESTIONS = [
-  { label: "Warm-Up", text: "A community center has a budget of \$5,000 to buy meal kits for a program. The center will buy two types of kits: Standard kits cost \$12.50 each. Deluxe kits cost \$22 each. To meet program requirements, the center must buy at least 280 total kits, and the number of standard kits must be at least twice the number of deluxe kits. What is the maximum number of deluxe kits the center can buy while meeting all requirements?\n\nA. 93   B. 106   C. 107   D. 157" },
+  { label: "Warm-Up", text: "A community center has a budget of \$5,000 to buy meal kits for a program. The center will buy two types of kits: Standard kits cost \$12.50 each. Deluxe kits cost \$22 each. To meet program requirements, the center must buy at least 280 total kits, and the number of standard kits must be at least twice the number of deluxe kits. What is the maximum number of deluxe kits the center can buy while meeting all requirements?", quiz: { options: ["93", "106", "107", "157"], correct: 1 } },
   { label: "Wing 1", text: "What's the funniest prank you've ever pulled or been a part of?" },
   { label: "Wing 2", text: "What is a moment in your life when you felt most alive?" },
   { label: "Wing 3", text: "If you could attend any event in history, what would it be?" },
@@ -319,6 +374,17 @@ QUESTIONS.forEach((q, i) => {
   inner.className = 'item-body-inner';
 
   let innerHtml = '<div class="item-question">' + q.text.replace(/\n/g, '<br><br>') + '</div>';
+  if(q.quiz){
+    const letters = ['A', 'B', 'C', 'D'];
+    innerHtml += '<div class="quiz-options">' +
+      q.quiz.options.map((opt, oi) =>
+        '<button class="quiz-option" data-index="' + oi + '">' +
+          '<span class="letter">' + letters[oi] + '</span><span>' + opt + '</span>' +
+        '</button>'
+      ).join('') +
+      '</div>' +
+      '<div class="quiz-result" id="quizResult-' + i + '"></div>';
+  }
   if(q.photo){
     innerHtml += '<div class="photo-wrap"><img src="' + PHOTO_SRC + '" alt="Photo for this question" class="qPhoto"><div class="photo-hint">Tap to enlarge</div></div>';
   }
@@ -350,6 +416,33 @@ QUESTIONS.forEach((q, i) => {
     photoImg.addEventListener('click', (e) => {
       e.stopPropagation();
       openLightbox(PHOTO_SRC);
+    });
+  }
+
+  if(q.quiz){
+    const optionButtons = inner.querySelectorAll('.quiz-option');
+    const resultEl = inner.querySelector('#quizResult-' + i);
+    let answered = false;
+    optionButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(answered) return;
+        answered = true;
+        const chosenIndex = parseInt(btn.dataset.index, 10);
+        optionButtons.forEach(b => {
+          b.classList.add('disabled');
+          const bi = parseInt(b.dataset.index, 10);
+          if(bi === q.quiz.correct) b.classList.add('correct');
+          else if(bi === chosenIndex) b.classList.add('incorrect');
+        });
+        const letters = ['A', 'B', 'C', 'D'];
+        resultEl.innerHTML = chosenIndex === q.quiz.correct
+          ? '<b>Correct!</b> The answer is ' + letters[q.quiz.correct] + '. ' + q.quiz.options[q.quiz.correct] + '.'
+          : 'Not quite. The correct answer is <b>' + letters[q.quiz.correct] + '. ' + q.quiz.options[q.quiz.correct] + '</b>.';
+        if(item.classList.contains('open')){
+          body.style.maxHeight = inner.scrollHeight + 'px';
+        }
+      });
     });
   }
 });
